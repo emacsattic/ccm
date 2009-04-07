@@ -4,9 +4,9 @@
 ;;; Copyright (C) 2000 Henrik Joensson.
 ;;;
 ;;; Author:   Henrik Joensson <henrik7205@hotmail.com>
-;;; Site:     http://www.ccm.f2s.com/emacs/
-;;; Version:  0.6
-;;; Keywords: Continuus, ccm
+;;; Updated:  %date_created: Tue Jul 04 15:16:28 2006 % %derived_by: mdc %
+;;; Version:  %full_filespec: ccm.el~6:el:1 %
+;;; Keywords: Synergy, ccm
 ;;;
 ;;; Version history
 ;;; Ver  Sign      Date        Comment
@@ -33,6 +33,12 @@
 ;;;                            Undo checkout command
 ;;;      henrik    2001-07-02  Added the create command
 ;;;                            Some lisp cleanups
+;;; 4    mdc@manbw.dk          Changed Continuus to Synergy in all strings.
+;;;                            Fixed check-out/in, buffer is now reverted
+;;;                            on these operations.
+;;;                            dos2unix conversion removed, not needed for 
+;;;                            Synergy/CM 6.4.                         
+;;;                            
 ;;;
 ;;; Installation:
 ;;;  (load "ccm")
@@ -76,25 +82,25 @@
   (save-window-excursion (ccm-menu)))
 
 
-  (defgroup continuus nil
-    "Continuus CM interface"
+  (defgroup Synergy nil
+    "Synergy CM interface"
     :group 'programming
     :group 'tools)
 
   (defcustom ccm-buffer-name "*ccm*"
     "Buffer in which to log all CCM actions."
     :type 'function
-    :group 'continuus)
+    :group 'Synergy)
 
   (defcustom ccm-exe-name "ccm"
-    "The Continuus executable name"
+    "The Synergy executable name"
     :type 'function
-    :group 'continuus)
+    :group 'Synergy)
 
   (defcustom ccm-buffer-size 10
     "The size of the work buffer"
     :type 'function
-    :group 'continuus)
+    :group 'Synergy)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; XEmacs
@@ -104,19 +110,19 @@
   (require 'easymenu)
 
   (defcustom ccm-toolbar t
-    "Display Continuus icons in the toolbar"
+    "Display Synergy icons in the toolbar"
     :type 'bool
-    :group 'continuus)
+    :group 'Synergy)
 
 ;; (defcustom ccm-icon-checkout "~/emacs/icons/checkout.xpm"
 ;;   "Image for the checkout icon"
 ;;   :type 'function
-;;   :group 'continuus)
+;;   :group 'Synergy)
 
 ;; (defcustom ccm-icon-checkin "~/emacs/icons/checkin.xpm"
 ;;   "Image for the checkout icon"
 ;;   :type 'function
-;;   :group 'continuus)
+;;   :group 'Synergy)
 
  ;; Toolbar
  (setq ccm-toolbar-list
@@ -149,23 +155,23 @@
  ))
 
 (defvar ccm-modeline-string nil
-  "Display Continuus information in the modeline.")
+  "Display Synergy information in the modeline.")
 
 (defvar ccm-menu-at-top t
   "Display the menu bar in the top menu bar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Constants
-(defconst ccm-int-version-string "0.6" "Version String")
-(defconst ccm-int-date-string "2001-07-01" "Date String")
-(defconst ccm-int-author-string "Henrik Joensson" "Author String")
+(defconst ccm-int-version-string "%%version: 5 %%" "Version String")
+(defconst ccm-int-date-string "%%date_created: %%" "Date String")
+(defconst ccm-int-author-string "%%derived_by: %%" "Author String")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Commands
 (defun ccm-co ()
   "Check out a file"
   (interactive)
-  (let ((filename (buffer-name)))
+  (let ((filename (file-name-nondirectory buffer-file-name)))
     (ccm-show-buffer)
     (cond(ccm-running-xemacs
       (insert-string "\nStarting check out...\n" ccm-buffer-name)))
@@ -181,7 +187,7 @@
 (defun ccm-undo-co ()
   "Undo file checkout"
   (interactive)
-  (let ((filename (buffer-name)))
+  (let ((filename (file-name-nondirectory buffer-file-name)))
     (ccm-show-buffer)
     (cond(ccm-running-xemacs
       (insert-string "\nUndoing check out...\n" ccm-buffer-name)))
@@ -198,7 +204,7 @@
 (defun ccm-ci ()
   "Check in a file"
   (interactive)
-  (let ((filename (buffer-name)))
+  (let ((filename (file-name-nondirectory buffer-file-name)))
     (ccm-show-buffer)
     (cond(ccm-running-xemacs
     (insert-string "\nStarting check in...\n" ccm-buffer-name)))
@@ -209,12 +215,12 @@
     (start-process-shell-command "ccm" ccm-buffer-name
                                  ccm-exe-name "ci -nc" filename)
     (set-process-sentinel (get-process "ccm") 'ccm-sentinel-ci)))
-
+ 
 
 (defun ccm-history ()
   "Display file history"
   (interactive)
-  (let* ((filename (buffer-name))
+  (let* ((filename (file-name-nondirectory buffer-file-name))
 	 (command (format "history %s" filename)))
     (ccm-show-buffer)
     (ccm-run-command "\nStarting history...\n" command)))
@@ -249,11 +255,11 @@
     (setenv "CCM_ADDR" ccm-addr)))
 
 (defun ccm-create ()
-  "Creates the current file in Continuus, asks the user for a type and version"
+  "Creates the current file in Synergy, asks the user for a type and version"
   (interactive)
   (let* ((type (read-string "Type of the file: " ""))
 	(version (read-string "Version of the file: " ""))
-	(filename (buffer-name))
+	(filename (file-name-nondirectory buffer-file-name))
 	(create-command (format "create -type %s %s"
 				type filename))
 	(attr-command (format "attr -modify version -value %s %s"
@@ -291,7 +297,7 @@
     (setq comint-output-filter-functions
           (push 'shell-strip-ctrl-m
                 comint-output-filter-functions))
-  (let* ((filename (buffer-name))
+  (let* ((filename (file-name-nondirectory buffer-file-name))
          (ccm-version (exec-to-string
                       (format "ccm ls -f \"%%version:%%status\" %s" filename))))
 ; strip \n from version string
@@ -312,8 +318,6 @@
   (ccm-update-modeline)
   (switch-to-buffer-other-window ccm-buffer-name)
   (goto-char (point-max))
-  (dos2unix)
-;;  (redraw-modeline)
 )
 
 (defun ccm-sentinel-co (process event)
@@ -322,12 +326,12 @@
   (cond(ccm-running-xemacs
 	(insert-string "Command completed!\n")))
   
-  (message buffer-name)
-;;  (if buffer-read-only
-;;      (toggle-read-only))
+  (message (buffer-name))
+  (if buffer-read-only
+      (revert-buffer t t))
 
   ; Ask the user if we should reload the file
-  (find-file (buffer-name)))
+  (find-file (file-name-nondirectory buffer-file-name)))
 
 (defun ccm-sentinel-ci (process event)
   (ccm-sentinel process event)
@@ -337,7 +341,7 @@
 	(insert-string "Command completed!\n")))
 
   (if (not buffer-read-only)
-      (toggle-read-only)))
+      (revert-buffer t t)))
 
 (defun ccm-process-filter (process output)
   (let ((old-buffer (current-buffer)))
@@ -352,38 +356,28 @@
           (if moving (goto-char (process-mark process))))
       (set-buffer old-buffer))))
 
-(defun dos2unix ()
-  "Convert this entire buffer from MS-DOS text file format to UNIX."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward "\r$" nil t)
-      (replace-match "" nil nil))
-    (goto-char (1- (point-max)))
-    (if (looking-at "\C-z")
-        (delete-char 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mode Information
 (defun ccm-integration-version ()
-  "Display the version of Continuus Integration"
+  "Display the version of Synergy Integration"
   (interactive)
   (message ccm-int-version-string))
 
 (defun ccm-integration-date ()
-  "Display the date of Continuus Integration"
+  "Display the date of Synergy Integration"
   (interactive)
   (message ccm-int-date-string))
 
 (defun ccm-integration-author ()
-  "Display the author of Continuus Integration"
+  "Display the author of Synergy Integration"
   (interactive)
   (message ccm-int-author-string))
 
 (defun ccm-about ()
   "Display version, date, author"
   (interactive)
-  (message (format "Continuus XEmacs Integration v%s, %s, %s"
+  (message (format "Synergy XEmacs Integration %s, %s, %s"
 		   ccm-int-version-string
 		   ccm-int-date-string
 		   ccm-int-author-string)))
@@ -398,7 +392,7 @@
   )
 
 (defun ccm-menu-top ()
-  (delete-menu-item '("Tools" "Continuus"))
+  (delete-menu-item '("Tools" "Synergy"))
   (easy-menu-add ccm-mode-menu)
   (setq ccm-menu-at-top t)
   (message "Setting menu to top menu bar")
@@ -406,7 +400,7 @@
 
 (defun ccm-menu-tools ()
   (easy-menu-remove ccm-mode-menu)
-  (add-menu-button '("Tools") ccm-mode-menu "Continuus")
+  (add-menu-button '("Tools") ccm-mode-menu "Synergy")
   (setq ccm-menu-at-top nil)
   (message "Setting menu to Tools menu bar")
   )
@@ -426,10 +420,10 @@
 
 ; Minor Mode
 (defvar ccm-mode nil
-  "Minor mode for editing Continuus controlled files")
+  "Minor mode for editing Synergy controlled files")
 
 (defun ccm-mode (&optional arg)
-  "Minor mode for editing Continuus controlled files"
+  "Minor mode for editing Synergy controlled files"
   (interactive)
   (setq ccm-mode
 	(if (null arg) (not ccm-mode)
@@ -444,8 +438,8 @@
     (require 'easymenu)
     (easy-menu-define ccm-mode-menu
 		      ccm-mode-map
-		      "Menu used for Continuus Integration"
-		      (list "Continuus"
+		      "Menu used for Synergy Integration"
+		      (list "Synergy"
 			    ["Check Out File" ccm-co t]
 			    ["Undo Check Out" ccm-undo-co t]
 			    ["Check In File" ccm-ci t]
@@ -461,20 +455,20 @@
 			    ["Set CCM_ADDR" ccm-set-ccmAddr t]
 			    ["---" nil nil]
 			    ["Change Menu Bar Location" ccm-change-menu t]
-			    ["About Continuus Mode" ccm-about t]))
+			    ["About Synergy Mode" ccm-about t]))
 
-    (easy-menu-add ccm-mode-menu "Continuus"))
+    (easy-menu-add ccm-mode-menu "Synergy"))
 
    (ccm-running-gnuemacs
     ;; Menu support for GNU Emacs
     (or (lookup-key global-map [menu-bar])
 	(define-key global-map [menu-bar] (make-sparse-keymap "menu-bar")))
-    (defvar menu-bar-ccm-menu (make-sparse-keymap "Continuus"))
+    (defvar menu-bar-ccm-menu (make-sparse-keymap "Synergy"))
     (setq menu-bar-final-items (cons 'ccm-menu menu-bar-final-items))
     (define-key global-map [menu-bar ccm-menu]
-      (cons "Continuus" menu-bar-ccm-menu))
+      (cons "Synergy" menu-bar-ccm-menu))
     (define-key menu-bar-ccm-menu [ccm-about]
-      '("About Continuus mode" . ccm-about))
+      '("About Synergy mode" . ccm-about))
     (define-key menu-bar-ccm-menu [separator-about] '("--"))
     (define-key menu-bar-ccm-menu [ccm-set-ccmAddr]
       '("Set CCM_ADDR" . ccm-set-ccmAddr))
